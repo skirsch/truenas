@@ -6,4 +6,4 @@ These are handy truenas and ZFS scripts to do things such as:
 4. `tcp_params_set`: triple the bandwidth on a single stream
 5. `zfs_backup`: Uses `zfs send` to create a backup file of certain datasets
 6. `zvol_backup`: Uses `zfs send` to create a backup file of just my zVols
-7. `seatbelts`: Fasten before big change. Release when done. Don't keep them on long because you can't do certain operations with seatbelts on. Allows you to roll back a pool, NOT truenas config chanes.
+7. `seatbelts`: Fasten before big change. Release when done. Don't keep them on long because you can't do certain operations with seatbelts on. Allows you to roll back a pool, NOT truenas config changes.
