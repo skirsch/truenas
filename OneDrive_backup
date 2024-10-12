@@ -1,0 +1,1 @@
+rclone sync --config /mnt/main/scripts/conf/rclone.conf -v OneDrive: /mnt/main/backups/OneDrive  >/mnt/main/scripts/log/rclone.log  2>&1

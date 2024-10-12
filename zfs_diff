@@ -1,0 +1,73 @@
+#!/bin/python
+
+# take list of datasets and do zfs diff on them
+
+# all names are relative to your cwd
+
+# Example:
+#    cd /mnt/main
+#    zfs_mv foo* baz
+#
+import sys
+import os
+import libzfs
+from datetime import datetime, timedelta
+import pytz
+
+def get_snapshot_by_index(dataset, index):
+    snapshots = [snap for snap in dataset.snapshots]
+    if not snapshots or index >= len(snapshots):
+        return None
+    return sorted(snapshots, key=lambda snap: datetime.strptime(snap.properties['creation'].value, "%a %b %d %H:%M %Y"))[-(index + 1)]
+
+def zfs_diff(datasets, snapshot_index=0):
+    zfs = libzfs.ZFS()
+
+    # Get the pool name from the current working directory
+    cwd = os.getcwd()
+    pool_name = cwd.split(os.sep)[-1]
+
+    local_timezone = pytz.timezone('US/Pacific')  # Replace with your local timezone
+
+    for dataset_name in datasets:
+        # Create the full path relative to the pool name
+        full_dataset_name = f"{pool_name}/{dataset_name}"
+        dataset = zfs.get_dataset(full_dataset_name)
+        snapshot = get_snapshot_by_index(dataset, snapshot_index)
+
+        if snapshot is None:
+            print(f"No snapshots found for dataset {full_dataset_name}", file=sys.stderr)
+            continue
+
+        print(f"Running zfs diff for the LIVE dataset {full_dataset_name} against snapshot {snapshot.name}")
+        print("Timestamp\t\tChg\tf|d\tPath")
+        try:
+            # Corrected diff call to use live dataset as second parameter
+            diff_output = dataset.diff(snapshot.name, full_dataset_name)
+            for change in diff_output:
+                # Extracting details from DiffRecord object
+                timestamp_utc = change.timestamp
+                timestamp_local = timestamp_utc.replace(tzinfo=pytz.utc).astimezone(local_timezone).strftime('%Y-%m-%d %H:%M:%S')
+                change_type = '+' if change.cmd == libzfs.DiffRecordType.ADD else '-' if change.cmd == libzfs.DiffRecordType.REMOVE else 'M'
+                path_type = 'F' if change.type == libzfs.DiffFileType.FILE else '/'  # '/' for directory, 'F' for file
+                # Strip the dataset path prefix from the change path
+                path = os.path.relpath(change.path, f"/mnt/{full_dataset_name}")
+                print(f"{timestamp_local}\t{change_type}\t{path_type}\t{path}")
+        except libzfs.ZFSException as e:
+            print(f"Error running zfs diff on {full_dataset_name}: {e}", file=sys.stderr)
+        except KeyboardInterrupt:
+            print("Operation interrupted by user.", file=sys.stderr)
+            sys.exit(1)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python zfs_diff.py <dataset1> [<dataset2> ...] [snapshot_index]")
+        sys.exit(1)
+
+    datasets = sys.argv[1:]
+    if datasets[-1].isdigit():
+        snapshot_index = int(datasets.pop())
+    else:
+        snapshot_index = 0
+
+    zfs_diff(datasets, snapshot_index)

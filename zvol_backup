@@ -1,0 +1,27 @@
+#!/bin/bash
+# NOTE: this is NOT needed since the recursive main snapshot will snap all the ZVols as well
+
+# this will make it so we can have offset backups of these three pools
+
+# this script is called from the TrueNAS crontab as root
+
+# Get a list of zvols on the system
+ZVOLS=$(zfs list -H -o name -t volume)
+
+# Function to create a snapshot with timestamp
+function create_snapshot() {
+  local zvol_name="$1"
+  local snapshot_name="zvol_auto_$(date +%Y-%m-%d_%H-%M)"
+  zfs snapshot "$zvol_name@$snapshot_name"
+  echo "Created snapshot: $snapshot_name for zvol: $zvol_name"
+}
+
+# echo "ZVOLS=$ZVOLS"
+
+# Loop through each zvol and create a snapshot
+for zvol in $ZVOLS; do
+  create_snapshot "$zvol"
+done
+
+echo "All zvols in $DATASET_PATH successfully snapshotted!"
+

@@ -1,0 +1,2 @@
+#!/bin/bash
+cli -c 'system config save configsave={"secretseed":true, "root_authorized_keys":true} >/mnt/main/backups/config/truenas/truenas_config_'`date +"%y-%m-%d_%H"`.tar

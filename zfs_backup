@@ -1,0 +1,30 @@
+#!/bin/bash
+# for enabling cloud backups of pools you can't rclone
+# since they have links and special files
+
+
+# this script is called from the TrueNAS cron jobs
+# it takes a while to run because the pools are large
+
+# just need to do for ix-applications since system can be restored
+# from the latest system
+
+# this is where the zfs send backup files are stored
+cd /mnt/main/backups/truenas
+
+rm ix-applications-*.gz system-*.gz   # remove old backups
+datasets=( "main/ix-applications") # had "main/.system" before and appdata
+output_names=("ix-applications")   # removed appdata and system
+today=$(date +%Y-%m-%d)  # Get current date in YYYY-MM-DD format
+
+list_length=${#datasets[@]}   # get length
+for ((i=0; i<$list_length; i++)); do
+  dataset=${datasets[$i]}
+  output_name=${output_names[$i]}
+  # Create snapshot with current date suffix
+  snapshot_name="$dataset@${today}"
+  zfs snapshot -r $snapshot_name
+
+  # Send the created snapshot to a file
+  zfs send -R "$snapshot_name" | gzip > "${output_name}-${today}.gz"
+done
