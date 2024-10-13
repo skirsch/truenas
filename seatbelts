@@ -11,6 +11,8 @@ fi
 # Check the argument and perform the corresponding action
 case "$1" in
     on)
+	    echo "Saving system configuration"
+	    system_conf_save 
         echo "Creating checkpoint for the 'main' pool..."
         sudo /sbin/zpool checkpoint main
         if [ $? -eq 0 ]; then
