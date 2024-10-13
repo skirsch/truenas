@@ -2,11 +2,11 @@
 
 # rename zfs datasets and zvols
 
-# all names are relative to your cwd
+# all names are relative to your cwd except the destination which is a full path
 
 # Example:
-#    cd /mnt/main
-#    zfs_mv foo* baz
+#    cd /mnt/main/datsets
+#    zfs_mv foo* baz main/dataset1/dataset2
 #
 # this will move main/foo and main/foobar to be INSIDE main/baz
 
@@ -18,17 +18,16 @@ import libzfs
 def zfs_mv(datasets, destination):
     zfs = libzfs.ZFS()
 
-    # Get the pool name from the current working directory
+    # Get the pool name from the current working directory by removing /mnt
     cwd = os.getcwd()
-    pool_name = cwd.split(os.sep)[-1]
-
-    # Ensure the destination is relative to the pool root
-    destination = f"{pool_name}/{destination}"
+    parts = cwd.split(os.sep)[2:]
+    # Recombine the parts with '/'
+    pool_path = "/".join(parts)
 
     for dataset in datasets:
         # Create the full path relative to the pool name
-        source = f"{pool_name}/{dataset}"
-        dest = f"{destination}/{os.path.basename(dataset)}"
+        source = f"{pool_path}/{dataset}"
+        dest =  destination
         print(f"Renaming {source} to {dest}")
         try:
             zfs.get_dataset(source).rename(dest)
